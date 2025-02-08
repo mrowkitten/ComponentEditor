@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.dasdarklord.componenteditor.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ItemEnchantmentsComponentAccessor"
+  ],
+  "client": [
+    "ButtonWidgetAccessor",
+    "ClickableWidgetAccessor",
+    "ScreenAccessor",
+    "TextFieldWidgetAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
