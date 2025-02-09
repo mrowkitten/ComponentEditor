@@ -46,10 +46,11 @@ public class RawNBTScreen extends EditItemChild {
     protected void init() {
         super.init();
 
-        nbtTextField = new EditItemEditBoxWidget(font, 2, 2, width - 4, height - 4, Text.empty(), Text.empty());
+        nbtTextField = new EditItemEditBoxWidget(font, 0, 0, width , height, Text.empty(), Text.empty());
         nbtTextField.setText(tag.toString());
         CEWidgetUtil.setNBTElementHighlighterProvider(nbtTextField);
         nbtTextField.setScrollY(0);
+        nbtTextField.setDrawsBackground(false);
         nbtTextField.setMoveScissors(true);
 
         addDrawableChild(nbtTextField);
@@ -72,6 +73,11 @@ public class RawNBTScreen extends EditItemChild {
 
             context.drawText(font, errorText, (int) vec.x, (int) vec.y, 0xffffff, false);
         }
+    }
+
+    @Override
+    public void renderInGameBackground(DrawContext context) {
+        context.fillGradient(0, 0, this.width, this.height, 0xAA000000, 0xDA000000);
     }
 
     private Vec2f getPosition(int width, int y) {

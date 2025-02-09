@@ -78,13 +78,14 @@ public class LoreFactoryScreen extends FactoryScreen {
         loreTextField.setText(String.join("\n", mmLoreLines));
         loreTextField.setScrollY(0);
         loreTextField.setChangeListener(s -> setLore());
+        loreTextField.setDrawsBackground(false);
         CEWidgetUtil.setMiniMessageProvider(loreTextField);
         addDrawableChild(loreTextField);
     }
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        super.render(context, mouseX, mouseY, delta);
+    public void renderInGameBackground(DrawContext context) {
+        context.fillGradient(0, 0, this.width, this.height, 0xAA000000, 0xDA000000);
     }
 
     @Override

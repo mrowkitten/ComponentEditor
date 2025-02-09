@@ -17,9 +17,7 @@ import org.apache.commons.lang3.function.TriFunction;
 public class EditItemEditBoxWidget extends EditBoxWidget {
 
     private boolean moveScissors = false;
-    public void setMoveScissors(boolean moveScissors) {
-        this.moveScissors = moveScissors;
-    }
+    private boolean drawsBackground = true;
 
     private final TextRenderer textRenderer;
     private final Text placeholder;
@@ -41,7 +39,7 @@ public class EditItemEditBoxWidget extends EditBoxWidget {
         }
 
         if (this.visible) {
-            this.drawBox(context);
+            if (drawsBackground) this.drawBox(context);
 
             // Original Code: context.enableScissor(this.getX() + 1, this.getY() + 1, this.getX() + this.width - 1, this.getY() + this.height - 1);
             context.enableScissor(
@@ -69,6 +67,11 @@ public class EditItemEditBoxWidget extends EditBoxWidget {
 
     public void setRenderTextProvider(TriFunction<String, Integer, Integer, OrderedText> renderTextProvider) {
         this.renderTextProvider = renderTextProvider;
+    }
+
+    @Override
+    protected void renderOverlay(DrawContext context) {
+        super.renderOverlay(context);
     }
 
     protected void renderContents(DrawContext context, int mouseX, int mouseY, float delta) {
@@ -178,4 +181,11 @@ public class EditItemEditBoxWidget extends EditBoxWidget {
         }
     }
 
+    public void setMoveScissors(boolean moveScissors) {
+        this.moveScissors = moveScissors;
+    }
+
+    public void setDrawsBackground(boolean drawsBackground) {
+        this.drawsBackground = drawsBackground;
+    }
 }
