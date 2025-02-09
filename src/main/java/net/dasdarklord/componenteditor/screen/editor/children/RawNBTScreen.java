@@ -4,6 +4,7 @@ import com.mojang.brigadier.StringReader;
 import net.dasdarklord.componenteditor.ComponentEditor;
 import net.dasdarklord.componenteditor.screen.editor.EditItemChild;
 import net.dasdarklord.componenteditor.screen.editor.EditItemScreen;
+import net.dasdarklord.componenteditor.screen.widgets.CEWidgetUtil;
 import net.dasdarklord.componenteditor.screen.widgets.editor.EditItemEditBoxWidget;
 import net.dasdarklord.componenteditor.util.ColorUtil;
 import net.minecraft.client.MinecraftClient;
@@ -47,6 +48,7 @@ public class RawNBTScreen extends EditItemChild {
 
         nbtTextField = new EditItemEditBoxWidget(font, 2, 2, width - 4, height - 4, Text.empty(), Text.empty());
         nbtTextField.setText(tag.toString());
+        CEWidgetUtil.setNBTElementHighlighterProvider(nbtTextField);
         nbtTextField.setScrollY(0);
         nbtTextField.setMoveScissors(true);
 
