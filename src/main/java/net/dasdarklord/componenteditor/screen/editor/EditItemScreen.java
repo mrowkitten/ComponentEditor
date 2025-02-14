@@ -1,6 +1,9 @@
 package net.dasdarklord.componenteditor.screen.editor;
 
 import net.dasdarklord.componenteditor.ComponentEditor;
+import net.dasdarklord.componenteditor.screen.editor.app.CharactersApp;
+import net.dasdarklord.componenteditor.screen.editor.app.ColorPickerApp;
+import net.dasdarklord.componenteditor.screen.editor.app.EditItemApp;
 import net.dasdarklord.componenteditor.screen.editor.children.ComponentViewScreen;
 import net.dasdarklord.componenteditor.screen.editor.children.FactoryScreen;
 import net.dasdarklord.componenteditor.screen.editor.children.FactorySelectionScreen;
@@ -14,12 +17,12 @@ import net.dasdarklord.componenteditor.screen.widgets.suggestor.TextWidgetSugges
 import net.dasdarklord.componenteditor.mixin.ScreenAccessor;
 import net.dasdarklord.componenteditor.mixin.TextFieldWidgetAccessor;
 import net.dasdarklord.componenteditor.util.ColorUtil;
-import net.dasdarklord.componenteditor.util.ItemUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.Element;
+import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.navigation.GuiNavigation;
 import net.minecraft.client.gui.navigation.GuiNavigationPath;
 import net.minecraft.client.gui.screen.Screen;
@@ -40,6 +43,7 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec2f;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -49,12 +53,19 @@ import java.util.function.Consumer;
 
 public class EditItemScreen extends Screen {
 
+    private double mouseX;
+    private double mouseY;
+
     public List<String> alwaysViewComponents;
     public boolean showDefaults;
 
     public static final int CHILD_OFFSET_X = 5;
     public static final int CHILD_OFFSET_Y = 98;
 
+    private Vec2f appDragStart;
+    private EditItemApp isDraggingApp;
+
+    private List<EditItemApp> apps;
     private Screen childScreen;
 
     private boolean loadFromEditing;
@@ -74,6 +85,9 @@ public class EditItemScreen extends Screen {
 
     public SimpleButtonWidget factoryButton;
 
+    public SimpleButtonWidget colorPickerButton;
+    public SimpleButtonWidget charactersButton;
+
     private final Consumer<ItemStack> finishConsumer;
 
     private ItemStack original;
@@ -84,6 +98,8 @@ public class EditItemScreen extends Screen {
         finishConsumer = finish;
         original = stack;
         editing = original.copy();
+
+        apps = new ArrayList<>();
 
         font = ComponentEditor.MC.textRenderer;
 
@@ -120,7 +136,11 @@ public class EditItemScreen extends Screen {
         itemIdField.setText(idText);
 
         if (childScreen != null) {
-            childScreen.resize(client, width - CHILD_OFFSET_X * 2, height - CHILD_OFFSET_Y - 2);
+            childScreen.resize(client, width - CHILD_OFFSET_X * 2, height - CHILD_OFFSET_Y - 4);
+        }
+
+        for (EditItemApp app : apps) {
+            app.resize(client, app.getWidth(), app.getHeight());
         }
     }
 
@@ -217,6 +237,20 @@ public class EditItemScreen extends Screen {
         factoryButton = new SimpleButtonWidget(btnFactoryButton);
         addDrawableChild(factoryButton);
 
+        int colorPickerButtonWidth = font.getWidth("Color Picker") + 8;
+        ButtonWidget btnColorPickerButton = ButtonWidget.builder(Text.literal("Color Picker"), btn -> {
+            addApp(new ColorPickerApp(this));
+        }).dimensions(width - factoryButtonWidth - 5 - colorPickerButtonWidth - 2, 6 + 64 + 6, colorPickerButtonWidth, 20).build();
+        colorPickerButton = new SimpleButtonWidget(btnColorPickerButton);
+        addDrawableChild(colorPickerButton);
+
+        int charactersButtonWidth = font.getWidth("Chars") + 8;
+        ButtonWidget btnCharactersButton = ButtonWidget.builder(Text.literal("Chars"), btn -> {
+            addApp(new CharactersApp(this));
+        }).dimensions(width - factoryButtonWidth - 5 - colorPickerButtonWidth - 2 - charactersButtonWidth - 2, 6 + 64 + 6, charactersButtonWidth, 20).build();
+        charactersButton = new SimpleButtonWidget(btnCharactersButton);
+        addDrawableChild(charactersButton);
+
         ButtonWidget btnSaveButton = ButtonWidget.builder(Text.literal("Save"), btn -> {
             ItemStack cpy = editing.copy();
             ComponentEditor.MC.player.getInventory().setStack(ComponentEditor.MC.player.getInventory().selectedSlot, cpy);
@@ -299,8 +333,39 @@ public class EditItemScreen extends Screen {
         childScreen.init(ComponentEditor.MC, width - CHILD_OFFSET_X * 2, height - CHILD_OFFSET_Y - 2);
     }
 
+    public <T extends EditItemApp> List<T> getApps(Class<T> clazz) {
+        List<T> matching = new ArrayList<>();
+        for (EditItemApp app : apps) {
+            if (app.getClass().equals(clazz)) {
+                matching.add((T) app);
+            }
+        }
+        return matching;
+    }
+
+    public void addApp(EditItemApp app) {
+        if (apps.contains(app)) return;
+        if (app == null) return;
+        apps.add(app);
+        app.x = (int) mouseX - app.getWidth();
+        app.y = (int) mouseY;
+        app.init(ComponentEditor.MC, app.getWidth(), app.getHeight());
+    }
+
+    public void removeApp(EditItemApp app) {
+        if (app == null) return;
+        if (apps.contains(app)) {
+            app.removed();
+        }
+        apps.remove(app);
+    }
+
     @Override
     public boolean charTyped(char chr, int modifiers) {
+        for (EditItemApp app : apps.stream().filter(ParentElement::isFocused).toList()) {
+            if (app.charTyped(chr, modifiers)) return true;
+        }
+
         if (childScreen != null && childScreen.charTyped(chr, modifiers)) return true;
 
         return super.charTyped(chr, modifiers);
@@ -308,6 +373,10 @@ public class EditItemScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        for (EditItemApp app : apps.stream().filter(ParentElement::isFocused).toList()) {
+            if (app.keyPressed(keyCode, scanCode, modifiers)) return true;
+        }
+
         boolean handlesEscape = (childScreen instanceof EditItemChild c && c.handlesEscape());
         if (keyCode == GLFW.GLFW_KEY_ESCAPE && !handlesEscape) {
             if (!(childScreen instanceof ComponentViewScreen)) {
@@ -329,6 +398,41 @@ public class EditItemScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        for (EditItemApp app : apps) {
+            boolean over = false;
+            if (app.isMouseOver(mouseX - app.x, mouseY - app.y)) {
+                appDragStart = new Vec2f((float)mouseX - app.x, (float)mouseY - app.y);
+                isDraggingApp = app;
+                over = true;
+            }
+
+            if (app.mouseClicked(mouseX - app.x, mouseY - app.y, button)) {
+                appDragStart = null;
+                isDraggingApp = null;
+
+                if (getFocused() != app) {
+                    if (getFocused() != null && getFocused() instanceof EditItemApp app1) {
+                        app1.setFocused(false);
+                        app1.setFocused(null);
+                    }
+                    app.setFocused(true);
+                    app.setFocused(null);
+                }
+                setFocused(app);
+
+                childScreen.setFocused(false);
+                childScreen.setFocused(null);
+
+                return true;
+            }
+            if (over) return true;
+        }
+
+        for (EditItemApp app : apps) {
+            app.setFocused(false);
+            if (getFocused() == app) setFocused(null);
+        }
+
         if (childScreen != null && childScreen.mouseClicked(mouseX - CHILD_OFFSET_X, mouseY - CHILD_OFFSET_Y, button)) {
             return true;
         }
@@ -351,30 +455,55 @@ public class EditItemScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        for (EditItemApp app : apps) {
+            app.mouseReleased(mouseX - app.x, mouseY - app.y, button);
+        }
+        isDraggingApp = null;
+        appDragStart = null;
         if (childScreen != null) childScreen.mouseReleased(mouseX - CHILD_OFFSET_X, mouseY - CHILD_OFFSET_Y, button);
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        for (EditItemApp app : apps) {
+            if (app.mouseDragged(mouseX - app.x, mouseY - app.y, button, deltaX, deltaY)) return true;
+            if (app == isDraggingApp) {
+                if (appDragStart == null) appDragStart = new Vec2f((float)mouseX, (float)mouseY);
+                int newX = (int) (mouseX - appDragStart.x);
+                int newY = (int) (mouseY - appDragStart.y);
+                app.x = newX;
+                app.y = newY;
+            }
+        }
         if (childScreen != null) childScreen.mouseDragged(mouseX - CHILD_OFFSET_X, mouseY - CHILD_OFFSET_Y, button, deltaX, deltaY);
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
+        for (EditItemApp app : apps) {
+            app.mouseMoved(mouseX - app.x, mouseY - app.y);
+        }
         if (childScreen != null) childScreen.mouseMoved(mouseX - CHILD_OFFSET_X, mouseY - CHILD_OFFSET_Y);
         super.mouseMoved(mouseX, mouseY);
     }
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        for (EditItemApp app : apps.stream().filter(ParentElement::isFocused).toList()) {
+            if (app.keyReleased(keyCode, scanCode, modifiers)) return true;
+        }
+
         if (childScreen != null && childScreen.keyReleased(keyCode, scanCode, modifiers)) return true;
         return super.keyReleased(keyCode, scanCode, modifiers);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        for (EditItemApp app : apps) {
+            if (app.mouseScrolled(mouseX - app.x, mouseY - app.y, horizontalAmount, verticalAmount)) return true;
+        }
         if (childScreen != null && childScreen.mouseScrolled(mouseX - CHILD_OFFSET_X, mouseY - CHILD_OFFSET_Y, horizontalAmount, verticalAmount)) return true;
         if (suggestor.mouseScrolled(mouseX, mouseY, verticalAmount)) return true;
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
@@ -382,6 +511,9 @@ public class EditItemScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
+
         renderBackground(context, mouseX, mouseY, delta);
 
         MatrixStack matrices = context.getMatrices();
@@ -434,6 +566,20 @@ public class EditItemScreen extends Screen {
         }
 
         if (suggestor != null) suggestor.tryRenderWindow(context, mouseX, mouseY);
+
+        int appIndex = 100;
+        for (EditItemApp app : apps) {
+            app.width = app.getWidth();
+            app.height = app.getHeight();
+
+            matrices.push();
+            matrices.translate(app.x, app.y, 600 - appIndex); // Again, the only problem with this is that scissors don't work with translation, so we'll have to redo widgets that do use scissors
+
+            app.render(context, mouseX - app.x, mouseY - app.y, delta);
+
+            matrices.pop();
+            appIndex--;
+        }
     }
 
     @Override
@@ -460,6 +606,10 @@ public class EditItemScreen extends Screen {
         if (childScreen != null) {
             childScreen.tick();
         }
+
+        for (EditItemApp app : apps) {
+            app.tick();
+        }
     }
 
     @Override
@@ -474,14 +624,20 @@ public class EditItemScreen extends Screen {
 
     @Override
     public void setFocused(@Nullable Element focused) {
+        if (focused instanceof EditItemApp) {
+            super.setFocused(focused);
+            return;
+        }
         if (childScreen != null && !(childScreen instanceof ComponentViewScreen)) return;
         super.setFocused(focused);
     }
 
     @Override
     public @Nullable Element getFocused() {
+        Element focused = super.getFocused();
+        if (focused instanceof EditItemApp) return focused;
         if (!(childScreen instanceof ComponentViewScreen)) return null;
-        return super.getFocused();
+        return focused;
     }
 
     @Override

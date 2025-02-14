@@ -76,7 +76,7 @@ public class ComponentConverter {
                 index.incrementAndGet();
                 return true;
             }
-            if (index.get() > stopIndex) {
+            if (index.get() >= stopIndex) {
                 index.incrementAndGet();
                 return true;
             }
@@ -90,15 +90,12 @@ public class ComponentConverter {
                 current.setLength(0);
             }
 
-            char character;
-            try {
-                character = (char) codePoint;
-            } catch (Exception ignored) {
-                character = '?';
-            }
-            current.append(character);
+            char[] chars = Character.toChars(codePoint);
+            current.append(chars);
 
-            if (style.isEmpty()) style = defaultStyle.get();
+            if (style == null || style.isEmpty()) {
+                style = defaultStyle.get() == null ? Style.EMPTY : defaultStyle.get();
+            }
             lastStyle.set(style);
 
             index.incrementAndGet();
