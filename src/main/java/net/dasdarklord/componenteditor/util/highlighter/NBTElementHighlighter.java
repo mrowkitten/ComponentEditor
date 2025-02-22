@@ -86,6 +86,18 @@ public class NBTElementHighlighter implements Highlighter {
                 return listText;
             }
 
+            if (Character.isAlphabetic(reader.peek()) && Character.isUpperCase(reader.peek())) {
+                Component listTypeComponent = appendSkip(Component.empty(), reader);
+                listTypeComponent = appendSkipWhitespace(listTypeComponent, reader);
+                if (reader.peek() == ';') {
+                    listTypeComponent = appendSkip(listTypeComponent, reader);
+                    listTypeComponent = appendSkipWhitespace(listTypeComponent, reader);
+                    listText = listText.append(listTypeComponent);
+                } else {
+                    reader.setCursor(reader.getCursor() - 1);
+                }
+            }
+
             while (reader.canRead() && reader.peek() != ']') {
                 listText = listText.append(highlight(reader, input));
                 listText = appendSkipWhitespace(listText, reader);

@@ -1,8 +1,11 @@
 package net.dasdarklord.componenteditor.screen.editor;
 
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.navigation.GuiNavigation;
+import net.minecraft.client.gui.navigation.GuiNavigationPath;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class EditItemChild extends Screen {
 
@@ -42,6 +45,20 @@ public abstract class EditItemChild extends Screen {
 
     public boolean handlesEscape() {
         return false;
+    }
+
+    @Override
+    public @Nullable GuiNavigationPath getFocusedPath() {
+        return null;
+    }
+
+    @Override
+    public @Nullable GuiNavigationPath getNavigationPath(GuiNavigation navigation) {
+        return null;
+    }
+
+    @Override
+    protected void switchFocus(GuiNavigationPath path) {
     }
 
 }
