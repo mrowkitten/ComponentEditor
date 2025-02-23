@@ -176,6 +176,7 @@ public class ColorPickerApp extends EditItemApp {
             remove(widget);
         }
 
+        int index = 0;
         int row = 0;
         int column = 0;
         for (Color c : recentColors) {
@@ -195,6 +196,9 @@ public class ColorPickerApp extends EditItemApp {
                 column = 0;
                 row++;
             }
+
+            index++;
+            if (index > 15) break;
         }
     }
 
