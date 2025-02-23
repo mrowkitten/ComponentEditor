@@ -198,20 +198,17 @@ public class ColorPickerApp extends EditItemApp {
         }
     }
 
-    private void updateRecentColors() {
+    public void updateRecentColors() {
         for (ColorPickerApp app : parent.getApps(ColorPickerApp.class)) {
             if (app == this) continue;
             app.updateRecentColorsNoCall();
         }
 
         updateRecentColorsNoCall();
+        saveColors();
     }
 
-    @Override
-    protected void refreshWidgetPositions() { }
-
-    private static final File saveFile = new File("./componenteditor/colorpicker.nbt");
-    public static void clientStopping() {
+    private static void saveColors() {
         try {
             List<Color> recentColors = ColorPickerApp.recentColors;
             NbtList nbtList = new NbtList();
@@ -236,6 +233,14 @@ public class ColorPickerApp extends EditItemApp {
         } catch (Exception exc) {
             ComponentEditor.LOGGER.error("Couldn't save ColorPicker colors", exc);
         }
+    }
+
+    @Override
+    protected void refreshWidgetPositions() { }
+
+    private static final File saveFile = new File("./componenteditor/colorpicker.nbt");
+    public static void clientStopping() {
+        saveColors();
     }
 
     public static void clientStarting() {
