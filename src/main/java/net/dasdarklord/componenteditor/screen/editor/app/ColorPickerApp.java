@@ -132,7 +132,7 @@ public class ColorPickerApp extends EditItemApp {
                 recentColors.addFirst(color);
             } else {
                 recentColors.addFirst(color);
-                if (recentColors.size() > 15) recentColors.removeLast();
+                if (recentColors.size() > 30) recentColors.removeLast();
             }
 
             updateRecentColors();
@@ -198,7 +198,7 @@ public class ColorPickerApp extends EditItemApp {
             }
 
             index++;
-            if (index > 15) break;
+            if (index > 12) break;
         }
     }
 
