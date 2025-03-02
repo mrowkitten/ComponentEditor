@@ -2,9 +2,6 @@ package net.dasdarklord.componenteditor.screen.editor.app;
 
 import net.dasdarklord.componenteditor.screen.editor.EditItemChild;
 import net.dasdarklord.componenteditor.screen.editor.EditItemScreen;
-import net.minecraft.client.gui.navigation.GuiNavigation;
-import net.minecraft.client.gui.navigation.GuiNavigationPath;
-import org.jetbrains.annotations.Nullable;
 
 public abstract class EditItemApp extends EditItemChild {
 
@@ -31,4 +28,5 @@ public abstract class EditItemApp extends EditItemChild {
 
     public abstract int getWidth();
     public abstract int getHeight();
+
 }

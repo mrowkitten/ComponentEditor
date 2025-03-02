@@ -561,8 +561,6 @@ public class EditItemScreen extends Screen {
             childScreen.render(context, mouseX - CHILD_OFFSET_X, mouseY - CHILD_OFFSET_Y, delta);
 
             matrices.pop();
-
-            if (!(childScreen instanceof ComponentViewScreen)) super.setFocused(null);
         }
 
         if (suggestor != null) suggestor.tryRenderWindow(context, mouseX, mouseY);
@@ -624,20 +622,18 @@ public class EditItemScreen extends Screen {
 
     @Override
     public void setFocused(@Nullable Element focused) {
-        if (focused instanceof EditItemApp) {
-            super.setFocused(focused);
-            return;
+        for (EditItemApp app : apps) {
+            if (focused != app) {
+                app.setFocused(null);
+                app.setFocused(false);
+            }
         }
-        if (childScreen != null && !(childScreen instanceof ComponentViewScreen)) return;
-        super.setFocused(focused);
-    }
+        if (focused != childScreen && childScreen != null) {
+            childScreen.setFocused(null);
+            childScreen.setFocused(false);
+        }
 
-    @Override
-    public @Nullable Element getFocused() {
-        Element focused = super.getFocused();
-        if (focused instanceof EditItemApp) return focused;
-        if (!(childScreen instanceof ComponentViewScreen)) return null;
-        return focused;
+        super.setFocused(focused);
     }
 
     @Override
@@ -653,4 +649,5 @@ public class EditItemScreen extends Screen {
     @Override
     protected void switchFocus(GuiNavigationPath path) {
     }
+
 }

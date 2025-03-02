@@ -43,7 +43,7 @@ public interface TextFieldWidgetAccessor {
     int getFirstCharacterIndex();
 
     @Accessor("placeholder")
-    Text getPlaceholder();;
+    Text getPlaceholder();
 
     @Accessor("renderTextProvider")
     BiFunction<String, Integer, OrderedText> getRenderTextProvider();
